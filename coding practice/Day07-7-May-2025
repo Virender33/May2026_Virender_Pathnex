@@ -1,0 +1,68 @@
+# Ansible- Setup nginx with custom config
+- name: Setup nginx with custom config
+  hosts: allbecome: yes
+  tasks:
+     - name: Install nginx
+       yum:
+          name: nginx
+          state: present
+     - name: copy custom nginx.conf
+       copy:
+          src: nginx.conf
+          dest: /etc/nginx/nginx.conf
+     - name: Start nginx service      
+       service:
+          name: nginx
+          state: started
+          enabled: yes
+
+# Terraform- Provisionec2 with IAM Role
+resource"aws_iam_role" "ec2_role" {
+  name.             = "pathnex_ec2_role"
+  assume_role_policy = jsonencode([
+    Version ="2012-10-17"
+    Statement = [
+     {
+      Action = "sts:AssumeRole"
+      effect = "allow"
+      principal = {
+        service = "ec2.amazonaws.com"
+        
+      }
+     }
+
+    ]
+  ])
+}
+
+
+resource "aws_instance" "pathnex_ec2" {
+  ami = "ami-0abcd1234abcd1234"
+  instance_type ="t2.medium"
+  iam_instance_profile= aws_iam_role.ec2_role.name
+  tags = {
+    name = "Pathnex-EC2"
+  }
+}
+
+# Kubernetes - Configure ans secret Management
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    name: pathnex-config
+data:
+    app.properties: |
+      key= value
+
+---
+apiVersion: v1
+kind: secret
+metadata:
+  name : pathnex-secret
+ type: Opaque
+data:
+   password:  cGF0aG5leHBhc3M=
+
+# shell Script- Archive Logs
+#!/bin/bash
+tar -czf /var/log/archived_logs.tar.gz /var/log/*.log   
